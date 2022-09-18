@@ -1,0 +1,31 @@
+{
+	"folders": {},
+	"connections": {
+		"sqlite_jdbc-183291a9f61-55c4742d25562deb": {
+			"provider": "sqlite",
+			"driver": "sqlite_jdbc",
+			"name": "kcdata",
+			"save-password": true,
+			"read-only": false,
+			"configuration": {
+				"database": "/home/columbus/dev/KultOracle/kcdata",
+				"url": "jdbc:sqlite:/home/columbus/dev/KultOracle/kcdata",
+				"configurationType": "MANUAL",
+				"type": "dev",
+				"auth-model": "native",
+				"handlers": {}
+			}
+		}
+	},
+	"connection-types": {
+		"dev": {
+			"name": "Development",
+			"color": "255,255,255",
+			"description": "Regular development database",
+			"auto-commit": true,
+			"confirm-execute": false,
+			"confirm-data-change": false,
+			"auto-close-transactions": false
+		}
+	}
+}
