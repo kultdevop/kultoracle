@@ -12,15 +12,19 @@ def populateDeckContent(regex,fulltext,key,suit,principality,arcana,dct):
 
 def processArcanas(fulltext, arcana, dct, startid=0):
     i=startid
-    regex = r"(?sm)^("+i+".\s(.+)$.*)^"+(i+1)+". "
+    
+    regex = r"(?sm)(?:^"+str(i)+"\.\s(\w+(?:-\w*)*)(.*$.*)^"+str(i+1)+"\. )|(?:^"+str(i)+"\.\s(\w+(?:-\w*)*)(.*$.*)\Z)"
     while match := re.search(regex, fulltext, re.IGNORECASE):        
         
-        dct[str(match.group(1))]=str(match.group(2))
-        print(str(dct[str(match.group(1))]))
+        name=match.group(3) if match.group(1)is None else match.group(1)
+        body=match.group(4) if match.group(2)is None else match.group(2)
+        key=str(name+str(i).zfill(3)).upper()
+        dct[key]=body
+        print(dct[key])
         i+=1
-        
-        regex = r"(?sm)^("+i+".\s(.+)$.*)^"+(i+1)+". "
-
+    
+        regex = r"(?sm)(?:^"+str(i)+"\.\s(\w+(?:-\w*)*)(.*$.*)^"+str(i+1)+"\. )|(?:^"+str(i)+"\.\s(\w+(?:-\w*)*)(.*$.*)\Z)"
+    
 def loadMajorArcanaInfo(buf, dct):
     arcana='MAJOR_ARCANA'
     
@@ -30,12 +34,12 @@ def loadMajorArcanaInfo(buf, dct):
     if match := re.search(regex, buf, re.IGNORECASE):        
         
         subtext=str(match.group(1))
-        regex=r'\s{1,5}[\W]+(\w+)'
+        regex=r'(?i)KHLD\s{1,5}[\W]+(\w+(?:-\w*)*)'
         
         for key in dct.keys():
-            if match := re.search(key+regex, subtext, re.IGNORECASE):
+            if match := re.search(regex.replace('KHLD', key[:-3]), subtext, re.IGNORECASE):
                 principality=match.group(1)
-                dct[key]=(str(dct[key]),suit,principality,arcana)
+                dct[key]=(dct[key],suit,principality,arcana)
         
     
     regex = '(?sm)^The\s{1,5}Archons\s{1,5}(.*)^The\s{1,5}Death'
@@ -44,65 +48,59 @@ def loadMajorArcanaInfo(buf, dct):
     if match := re.search(regex, buf, re.IGNORECASE):        
         
         subtext=str(match.group(1))
-        regex=r'\s{1,5}[\W]+(\w+)'
+        regex=r'(?i)KHLD\s{1,5}[\W]+(\w+(?:-\w*)*)'
         
         for key in dct.keys():
-            if match := re.search(key+regex, subtext, re.IGNORECASE):
+            if match := re.search(regex.replace('KHLD', key[:-3]), subtext, re.IGNORECASE):
                 principality=match.group(1)
-                dct[key]=(str(dct[key]),suit,principality,arcana)
+                dct[key]=(dct[key],suit,principality,arcana)
         
-        
+    suit='CREATOR'
+    
+    principality='METROPOLIS'
+    key='ANTHROPOS000'
+    dct[key]=(dct[key],suit,principality,arcana)
+    
+    principality='ELYSIUM'
+    key='DEMIURGE001'
+    dct[key]=(dct[key],suit,principality,arcana)
+    
+    principality='INFERNO'
+    key='ASTAROTH002'
+    dct[key]=(dct[key],suit,principality,arcana)
+    
+
 def loadMinorArcana(buf, dct):
     arcana='MINOR_ARCANA'
-    suits=('SKULL','ROSE','HOURGLASS','CRESCENT','EYE')
-    regex = r'(?sm)(?:^1\. )(.*?)((?=^1\. )|\z)'
-    regexextractsuitdesc = r'(?sm)SUITPLH(.*?)(?=^\d+\.)'
+    suits=(('SKULL','DEATH'),('ROSE','PASSION'),('HOURGLASS','LABYRINTH'),('CRESCENT','MOON'),('EYE','ELYSIUM'))
+    regex = r'(?sm)(^1\. .*?)((?=^1\. )|\Z)'
+    regexextractsuitdesc = r'(?sm)(SUITPLH\w(?:-\w*)*$.*?\.[\n])'
     suit='SKULLS'
     
     for match in re.findall(regex, buf, re.IGNORECASE):        
         
-        subtext=str(match.group(1))
+        subtext=match[0]
         currsuit=''
         suitdesc=''
         for suit in suits:
-            if match := re.search(regexextractsuitdesc, 
-                                  subtext.replace('SUITPLH', suit[0]), re.IGNORECASE):
+            if match := re.search(regexextractsuitdesc.replace('SUITPLH', suit[0]), 
+                                  subtext, re.IGNORECASE):
                 suitdesc=match.group(1)
                 currsuit=suit[0]
                 currprincipality=suit[1]
-                break
+                subtext = subtext.replace(suitdesc,'')
         
-        subtext = subtext.replace(suitdesc,'')
-        
-        regex_card='(?sm)(^\d+\. \w+)(.*?)((?=^\d+\. )|\Z)'
+        regex_card='(?sm)(^(\d+)\. (\w+(?:-\w*)*).*?)((?=^\d+\. )|\Z)'
         
         for match_card in re.findall(regex_card, subtext, re.IGNORECASE):
-            dct[match_card.group(1)]=(suitdesc + '\n\n' +match_card.group(2),currsuit,currprincipality)
-        
-        
-        for key in dct.keys():
-            if match := re.search(key+regex, subtext, re.IGNORECASE):
-                principality=match.group(1)
-                dct[key]=(str(dct[key]),suit,principality,arcana)
+            dct[match_card[2] + match_card[1].zfill(3)]=(suitdesc + '\n\n' +match_card[0],currsuit,currprincipality,arcana)
         
 
-if __name__ == '__main__':
-    
-    workdir = "/home/columbus/dev/graphicsdesign"
-    outputdir = "/home/columbus/dev/graphicsdesign/output"
-    deck_rules_filename='/KULT Divinity Lost - Tarot Deck Rules.pdf'
-    tarot_deck_filename='/kult-tarot.pdf'
-    filename=tarot_deck_filename
-    
+
+def getpdftext(outputdir, workdir, filename):
     doc = fitz.open(workdir + filename )
     pages = [ doc[ i ] for i in range( doc.page_count ) ]
-    
-        
-    fulltext_buffer = ''
-    fulltext_major_arcana_buffer = ''
-    fulltext_minor_arcana_buffer = ''
-    
-    deckcontentdct={}
+    fulltext_buffer=''
     
     
     for page in pages:
@@ -115,7 +113,28 @@ if __name__ == '__main__':
         
     with open(outputdir + filename+'.txt', 'w', encoding="utf-8") as f:
         f.write(fulltext_buffer)
+
+    return fulltext_buffer
+
+if __name__ == '__main__':
+    
+    workdir = "/home/columbus/dev/graphicsdesign"
+    outputdir = "/home/columbus/dev/graphicsdesign/output"
+    deck_rules_filename='/KULT Divinity Lost - Tarot Deck Rules.pdf'
+    tarot_deck_filename='/kult-tarot.pdf'
+
+    fulltext_buffer = ''
+    fulltext_major_arcana_buffer = ''
+    fulltext_minor_arcana_buffer = ''
+    
+    deckcontentdct={}
+
+    filename=deck_rules_filename    
+    fulltext_buffer = getpdftext(outputdir, workdir, filename )
         
+    filename=tarot_deck_filename    
+    fulltext_tarot_deck = getpdftext(outputdir, workdir, filename )
+
     #FRONT COVER
     regex = r"(?s)(Basic\s{1,5}Guidelines.*)Example\s{1,5}reading"
     populateDeckContent(regex,fulltext_buffer,'FRONT COVER','COVER','ALL','ALL',deckcontentdct)
@@ -137,18 +156,17 @@ if __name__ == '__main__':
     deckcontentdct['KULT GUIDE URL']=(deckcontentdct['KULT GUIDE URL'],'COVER','ALL','ALL')
     
     #'The Major Arcana'
-    processArcanas(fulltext_major_arcana_buffer, 'MAJOR_ARCANA', deckcontentdct)
-    
-    loadMajorArcanaInfo(fulltext_major_arcana_buffer, deckcontentdct)
-    
+    regex=r"(?sm)(^0\.\s{1,5}\w+(?:-\w*)*$.*)\d{1,3}\s{1,5}^The\s{1,5}Major\s{1,5}Arcana\s{1,5}"
+    if match := re.search(regex, fulltext_buffer, re.IGNORECASE):
+        fulltext_major_arcana_buffer=match.group(1)    
+        processArcanas(fulltext_major_arcana_buffer, 'MAJOR_ARCANA', deckcontentdct)    
+        loadMajorArcanaInfo(fulltext_tarot_deck, deckcontentdct)
     
     #'The Minor Arcana'
-    processArcanas(fulltext_minor_arcana_buffer, 'MINOR_ARCANA',deckcontentdct, 1)
-    
-    loadMinorArcana(fulltext_minor_arcana_buffer, deckcontentdct)
+    regex=r"(?sm)(^1\.\s{1,5}\w+(?:-\w*)*$.*\.)(?:\s{1,5}^\d{1,3}\s{1,5}^The\s{1,5}Minor\s{1,5}Arcana\s{1,5})"
+    if match := re.search(regex, fulltext_buffer.replace(fulltext_major_arcana_buffer, ""), re.IGNORECASE):
+        fulltext_minor_arcana_buffer=match.group(1)    
+        #processArcanas(fulltext_minor_arcana_buffer, 'MINOR_ARCANA',deckcontentdct, 1)
+        loadMinorArcana(fulltext_minor_arcana_buffer, deckcontentdct)
     
     print(deckcontentdct)
-
-
-
-    
