@@ -1,12 +1,27 @@
 import fitz
+from PyQt5.QtGui import QPixmap, QImage, QPicture
+import os
+import sys
+from PIL.ImageQt import ImageQt
+
+
+# Create window
+
 
 import re
+from tqdm import tqdm # pip install tqdm
+from PyQt5.Qt import QWidget, QTemporaryDir, QFile, QSqlDatabase, QByteArray,\
+    QBuffer, QIODevice, QDataStream
+from PyQt5.QtWidgets import QApplication, QLabel, QMessageBox
+from PIL.Image import frombytes
+from PyQt5.QtSql import QSqlQuery
 
 
 
 def populateDeckContent(regex,fulltext,key,suit,principality,arcana,dct):
     if match := re.search(regex, fulltext, re.IGNORECASE):        
-        dct[key]=(str(match.group(1)),suit,principality,arcana)
+        dct[key]=dict(DESCRIPTION=str(match.group(1)),SUIT = suit, PRINCIPALITY=principality, 
+                                                                    ARCANA=arcana,IMAGE=None)
         print(str(dct[key]))
         
 
@@ -25,6 +40,23 @@ def processArcanas(fulltext, arcana, dct, startid=0):
     
         regex = r"(?sm)(?:^"+str(i)+"\.\s(\w+(?:-\w*)*)(.*$.*)^"+str(i+1)+"\. )|(?:^"+str(i)+"\.\s(\w+(?:-\w*)*)(.*$.*)\Z)"
     
+    dcttmp={}
+    
+    for key in dct.keys():
+        item = dct[key]
+        
+        if 'demiurge' in key.lower():
+            dcttmp[key.replace('DEMIURGE', 'DEMIURGOS')]=item
+        else:
+            dcttmp[key]=dct[key]
+    
+    dct.clear()
+    
+    for key in dcttmp.keys():
+        dct[key]=dcttmp[key]
+    
+    
+    
 def loadMajorArcanaInfo(buf, dct):
     arcana='MAJOR_ARCANA'
     
@@ -39,7 +71,7 @@ def loadMajorArcanaInfo(buf, dct):
         for key in dct.keys():
             if match := re.search(regex.replace('KHLD', key[:-3]), subtext, re.IGNORECASE):
                 principality=match.group(1)
-                dct[key]=(dct[key],suit,principality,arcana)
+                dct[key]=dict(DESCRIPTION=dct[key] ,SUIT = suit, PRINCIPALITY=principality, ARCANA=arcana, IMAGE=None)
         
     
     regex = '(?sm)^The\s{1,5}Archons\s{1,5}(.*)^The\s{1,5}Death'
@@ -53,21 +85,21 @@ def loadMajorArcanaInfo(buf, dct):
         for key in dct.keys():
             if match := re.search(regex.replace('KHLD', key[:-3]), subtext, re.IGNORECASE):
                 principality=match.group(1)
-                dct[key]=(dct[key],suit,principality,arcana)
+                dct[key]=dict(DESCRIPTION=dct[key] ,SUIT = suit, PRINCIPALITY=principality, ARCANA=arcana, IMAGE=None)
         
     suit='CREATOR'
     
     principality='METROPOLIS'
     key='ANTHROPOS000'
-    dct[key]=(dct[key],suit,principality,arcana)
+    dct[key]=dict(DESCRIPTION=dct[key] ,SUIT = suit, PRINCIPALITY=principality, ARCANA=arcana, IMAGE=None)
     
     principality='ELYSIUM'
-    key='DEMIURGE001'
-    dct[key]=(dct[key],suit,principality,arcana)
+    key='DEMIURGOS001'
+    dct[key]=dict(DESCRIPTION=dct[key] ,SUIT = suit, PRINCIPALITY=principality, ARCANA=arcana, IMAGE=None)
     
     principality='INFERNO'
     key='ASTAROTH002'
-    dct[key]=(dct[key],suit,principality,arcana)
+    dct[key]=dict(DESCRIPTION=dct[key] ,SUIT = suit, PRINCIPALITY=principality, ARCANA=arcana, IMAGE=None)
     
 
 def loadMinorArcana(buf, dct):
@@ -93,12 +125,13 @@ def loadMinorArcana(buf, dct):
         regex_card='(?sm)(^(\d+)\. (\w+(?:-\w*)*).*?)((?=^\d+\. )|\Z)'
         
         for match_card in re.findall(regex_card, subtext, re.IGNORECASE):
-            dct[match_card[2] + match_card[1].zfill(3)]=(suitdesc + '\n\n' +match_card[0],currsuit,currprincipality,arcana)
+            dct[match_card[2] + match_card[1].zfill(3)]=dict(DESCRIPTION=suitdesc + '\n\n' +match_card[0] ,
+                            SUIT = currsuit, PRINCIPALITY=currprincipality, ARCANA=arcana, IMAGE=None)
         
 
 
 def getpdftext(outputdir, workdir, filename):
-    doc = fitz.open(workdir + filename )
+    doc = fitz.Document(workdir + filename )
     pages = [ doc[ i ] for i in range( doc.page_count ) ]
     fulltext_buffer=''
     
@@ -116,12 +149,57 @@ def getpdftext(outputdir, workdir, filename):
 
     return fulltext_buffer
 
+def createConnection():
+
+    #QDir::mkpath("../student");    
+    #QFile::copy(":/data/kcdata", "")
+
+    tmpDir=QTemporaryDir()
+    print("temporary dir:", tmpDir.path())
+    
+    fcFileCopy=QFile()
+    dstFile=QFile('kcdatatest')
+    
+    if dstFile.exists():
+        dstFile.remove()
+        
+    fcFileCopy.copy("../resources/data/kcdatatest", 'kcdatatest')
+    print("copied file:", tmpDir.path() + '/kcdata')
+    
+    con = QSqlDatabase.addDatabase("QSQLITE")
+    #con.setConnectOptions("QSQLITE_OPEN_READONLY")
+
+    con.setDatabaseName( 'kcdatatest')
+
+    if not con.open():
+
+        QMessageBox.critical(
+
+            None,
+
+            "KultOracle - Error!",
+
+            "Database Error: %s" % con.lastError().databaseText(),
+
+        )
+
+        return False
+
+    return True
+
+
+
+
 if __name__ == '__main__':
     
-    workdir = "/home/columbus/dev/graphicsdesign"
-    outputdir = "/home/columbus/dev/graphicsdesign/output"
-    deck_rules_filename='/KULT Divinity Lost - Tarot Deck Rules.pdf'
-    tarot_deck_filename='/kult-tarot.pdf'
+    app = QApplication(sys.argv)
+    w = QWidget()
+    w.setWindowTitle("PyQT4 Pixmap @ pythonspot.com ")
+    
+    workdir = "/home/columbus/dev/graphicsdesign/"
+    outputdir = "/home/columbus/dev/graphicsdesign/output/"
+    deck_rules_filename='KULT Divinity Lost - Tarot Deck Rules.pdf'
+    tarot_deck_filename='kult-tarot.pdf'
 
     fulltext_buffer = ''
     fulltext_major_arcana_buffer = ''
@@ -137,23 +215,24 @@ if __name__ == '__main__':
 
     #FRONT COVER
     regex = r"(?s)(Basic\s{1,5}Guidelines.*)Example\s{1,5}reading"
-    populateDeckContent(regex,fulltext_buffer,'FRONT COVER','COVER','ALL','ALL',deckcontentdct)
+    populateDeckContent(regex,fulltext_buffer,'FRONT COVER003','COVER','ALL','ALL',deckcontentdct)
 
     #'ARCHONS'
     regex = r"(?sm)Reading\s{1,5}Templates\s{1,5}The\s{1,5}Major\s{1,5}Arcana(.*)^0. "
-    populateDeckContent(regex,fulltext_buffer,'ARCHONS','COVER','ALL','ALL',deckcontentdct)
+    populateDeckContent(regex,fulltext_buffer,'ARCHONS002','COVER','ALL','ALL',deckcontentdct)
         
     #'DEATH ANGELS'
     regex = r"(?sm)Reading\s{1,5}Templates\s{1,5}The\s{1,5}Major\s{1,5}Arcana(.*)^0. "
-    populateDeckContent(regex,fulltext_buffer,'DEATH ANGELS','COVER','ALL','ALL',deckcontentdct)
+    populateDeckContent(regex,fulltext_buffer,'DEATH ANGELS004','COVER','ALL','ALL',deckcontentdct)
         
     #'SUITS'
     regex = r"(?sm)^The\s{1,5}Minor\s{1,5}Arcana\s{1,5}(The\s{1,5}Minor\s{1,5}Arcana.*)^Skulls"
-    populateDeckContent(regex, fulltext_buffer, 'SUITS','COVER','ALL','ALL', deckcontentdct)
+    populateDeckContent(regex, fulltext_buffer, 'SUITS001','COVER','ALL','ALL', deckcontentdct)
     
     #'KULT GUIDE URL'
-    deckcontentdct['KULT GUIDE URL']='Guide to Using\nthe Tarot Deck\nhttps://kultdivinitylost.com/tarot'
-    deckcontentdct['KULT GUIDE URL']=(deckcontentdct['KULT GUIDE URL'],'COVER','ALL','ALL')
+    deckcontentdct['KULT GUIDE URL005']='Guide to Using\nthe Tarot Deck\nhttps://kultdivinitylost.com/tarot'
+    deckcontentdct['KULT GUIDE URL005']=dict( DESCRIPTION=deckcontentdct['KULT GUIDE URL005'], SUIT='COVER',
+                        PRINCIPALITY='ALL',ARCANA='ALL',IMAGE=None)
     
     #'The Major Arcana'
     regex=r"(?sm)(^0\.\s{1,5}\w+(?:-\w*)*$.*)\d{1,3}\s{1,5}^The\s{1,5}Major\s{1,5}Arcana\s{1,5}"
@@ -168,5 +247,88 @@ if __name__ == '__main__':
         fulltext_minor_arcana_buffer=match.group(1)    
         #processArcanas(fulltext_minor_arcana_buffer, 'MINOR_ARCANA',deckcontentdct, 1)
         loadMinorArcana(fulltext_minor_arcana_buffer, deckcontentdct)
+
+    doc = fitz.Document(workdir+tarot_deck_filename)
+    toc = doc.get_toc(False)
+
+    
+    for toc_page in toc:
+        for key in deckcontentdct.keys():
+            if key[:-3] in toc_page[1].upper():
+                for img in tqdm(doc.get_page_images(toc_page[2]-1), desc="page_images"):
+                    xref = img[0]
+                    image = doc.extract_image(xref)
+                    print(f"\nwidth = {image['width']} height = {image['height']}")
+                    
+                    if image["width"]==390 and image["height"] == 686:
+                        pix = fitz.Pixmap(doc, xref)
+                        pix.save(os.path.join(outputdir, "%s_p%s-%s.png" % (deck_rules_filename[:-4], toc_page[2]-1, xref)))
+                        pilimg = frombytes('RGB', [pix.width, pix.height], pix.samples,'raw')
+                        qimage = ImageQt( pilimg).copy()
+
+                        label = QLabel(w)
+                        pixmap = QPixmap.fromImage(qimage)
+                        w.resize(pixmap.width(),pixmap.height())
+                                                
+                        byteArray = QByteArray()
+                        buffer =  QBuffer(byteArray)
+                        buffer.open(QIODevice.WriteOnly);
+                        
+                        out = QDataStream (buffer)
+                        out << pixmap
+
+                        deckcontentdct[key]['IMAGE'] = byteArray.data()
+
+                        byteArray = QByteArray(deckcontentdct[key]['IMAGE'])
+                        buffer =  QBuffer(byteArray)
+                        buffer.open(QIODevice.ReadOnly);
+                        inp = QDataStream (buffer)                        
+                        picdata = QPixmap()
+                        inp >> picdata                        
+                        
+                        label.setPixmap(picdata)
+                        # Draw window
+                        #w.show()
+                        # Create widget
+                        #app.exec_()
+
+    if not createConnection():
+        sys.exit(1)
+
+    query = QSqlQuery()
+    
+    prepstmnt= "INSERT INTO CARDS_DECK ( NAME, DESCRIPTION, SUIT, PRINCIPALITY, ARCANA, IMAGE) " + \
+                    "VALUES ( ?,?,?,?,?,? )"
+
+    for key in deckcontentdct:
+        if not query.prepare(prepstmnt):
+            print("query prep result: ",query.lastError().text())
+        else:
+            query.addBindValue(key)
+            query.addBindValue(deckcontentdct[key]["DESCRIPTION"])
+            query.addBindValue(deckcontentdct[key]["SUIT"])
+            query.addBindValue(deckcontentdct[key]["PRINCIPALITY"])
+            query.addBindValue(deckcontentdct[key]["ARCANA"])
+            query.addBindValue(deckcontentdct[key]["IMAGE"])
+
+            print("query insert res: ",query.exec())
+        print("query result: ",query.lastError().text())
+        
+
+
+    
+
+    # Draw window
+    #w.show()
+    # Create widget
+    #app.exec_()
+
+
+
+    QSqlDatabase.removeDatabase(QSqlDatabase.database().connectionName())
+
     
     print(deckcontentdct)
+
+
+

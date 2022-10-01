@@ -201,7 +201,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 #            if event.buttons() == QtCore.Qt.NoButton:
 #                pos = event.pos()
 #                self.edit.setText('x: %d, y: %d' % (pos.x(), pos.y()))
-            if 'time to invoke those spirits...' in self.btnShuffle.text() :
+            if 'time to invoke those spirits...' in self.btnShuffle.text():
                 lstOfChosen = self.getRandomArcanaPick()
                 self.lstChosenCards =[self.lstActiveDeck[lstOfChosen[i]] for i in range(5)]            
                 self.__sigilIdleTimeoutCurrentms=0
