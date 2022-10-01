@@ -328,7 +328,7 @@ if __name__ == '__main__':
     QSqlDatabase.removeDatabase(QSqlDatabase.database().connectionName())
 
     
-    print(deckcontentdct)
+    print(deckcontentdct.keys())
 
 
 
