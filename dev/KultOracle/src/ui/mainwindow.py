@@ -4,7 +4,8 @@
 Module implementing MainWindow.
 """
 
-import PyQt5
+import resources.bitmaps_rc
+
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import pyqtSlot, QTimer,  QDir
 from PyQt5.QtWidgets import QMainWindow,  QApplication
@@ -18,12 +19,9 @@ from ui.descriptionwindow import DescriptionWindow
 from ui.deck import DeckItem
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery
 
-
-import resources.bitmaps_rc
-
-from PyQt5.Qt import QRect, Qt
+from PyQt5.Qt import QRect, Qt, QByteArray, QBuffer, QIODevice, QDataStream
 from PyQt5.QtGui import QIcon, QPixmap, QTransform, QPainter, QPen, QFont
-
+from loader.pdfloader import PdfLoader
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     """
@@ -63,14 +61,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._manager.setWidget(self)        
         self._manager.start()
         
+        self.loadContentIntoDatabase()
+        
+        
         self.deckMajorArcana={}
         self.deckMinorArcana={}
         self.deckPrincipalities={}
         self.dctCardsInfo={}
         
-        self._populateDeck(":/data", "majorarcana_",  self.deckMajorArcana)
-        self._populateDeck(":/data", "minorarcana_",  self.deckMinorArcana)
-        self._populateDeck(":/data", "principalities_",  self.deckPrincipalities)
+        
+        #self._populateDeck(":/data", "majorarcana_",  self.deckMajorArcana)
+        #self._populateDeck(":/data", "minorarcana_",  self.deckMinorArcana)
+        #self._populateDeck(":/data", "principalities_",  self.deckPrincipalities)
+        self.populateDeckFromDb("MAJOR_ARCANA",  self.deckMajorArcana)
+        self.populateDeckFromDb("MINOR_ARCANA",  self.deckMinorArcana)
+        self.populateDeckFromDb("ALL",  self.deckPrincipalities)
 
         
         NAME, DESCRIPTION, SUIT, PRINCIPALITY, ARCANA = range(5)
@@ -81,6 +86,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.dctCardsInfo[query.value(NAME)]=(query.value(NAME),
                     query.value(DESCRIPTION), query.value(SUIT), query.value(PRINCIPALITY),
                         query.value(ARCANA))
+
 
         QSqlDatabase.removeDatabase(QSqlDatabase.database().connectionName())
 
@@ -106,10 +112,70 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         self.installEventFilter(self)
 
+    def loadContentIntoDatabase(self):
+        workdir = "./" 
+        deck_rules_filename='KULT Divinity Lost - Tarot Deck Rules.pdf'
+        tarot_deck_filename='kult-tarot.pdf'
+        
+    
+        pdfprocessor=PdfLoader()
+        
+        pdfprocessor.processDocuments(workdir, deck_rules_filename, 
+                                                     tarot_deck_filename)
+    
+    
+    def populateDeckFromDb(self, arcana, deck):
+    
+        
+        NAME, DESCRIPTION, SUIT, PRINCIPALITY, ARCANA, IMAGE, IMAGEBACK = range(7)
+        
+        query = QSqlQuery()
+        prepstmnt = "SELECT NAME, DESCRIPTION, SUIT, PRINCIPALITY, ARCANA, IMAGE, IMAGEBACK " +\
+                          "FROM CARDS_DECK WHERE ARCANA= ? ;"
+    
+        if not query.prepare(prepstmnt):
+            print("query prep result: ",query.lastError().text())
+        else:
+            query.addBindValue(arcana)
+            print("query select exec res: ",query.exec())
+            print("query result: ",query.lastError().text())
+
+        while query.next():
+            
+            tarotCard=DeckItem()
+            tarotCard.setTitle(query.value(NAME))
+            tarotCard.setDescription(query.value(DESCRIPTION))
+            tarotCard.setSuit(query.value(SUIT))
+            tarotCard.setPrincipality(query.value(PRINCIPALITY))
+            tarotCard.setArcana(query.value(ARCANA))
+    
+            byteArray = QByteArray().fromHex(query.value(IMAGE))
+            buffer =  QBuffer(byteArray)
+            buffer.open(QIODevice.ReadOnly)
+            inp = QDataStream (buffer)                        
+            picdata = QPixmap()
+            inp >> picdata                        
+            tarotCard.setFrontFaceImage(picdata)
+    
+            byteArray = QByteArray().fromHex(query.value(IMAGEBACK))
+            buffer =  QBuffer(byteArray)
+            buffer.open(QIODevice.ReadOnly)
+            inp = QDataStream (buffer)                        
+            picdata = QPixmap()
+            inp >> picdata
+            tarotCard.setBackFaceImage(picdata)
+    
+            
+            deck[query.value(NAME)]=tarotCard
+            
+
 
     def _populateDeck(self,  path, term,  deck):
+        
         directory = QDir(path)
+        
         directory.setFilter(
+        
             directory.filter() |
             QDir.NoDotAndDotDot |
             QDir.NoSymLinks
@@ -186,7 +252,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def graphicsViewDoubleClickEvent(self, caller, tarotCard,  event):
         if tarotCard.showFrontFace():
-            self.dwlblDescription.setText(self.dctCardsInfo[tarotCard.getTitle().upper()][1])
+            self.dwlblDescription.setText(tarotCard.getDescription())
             self.descriptionWindow.setGeometry(QRect(self.geometry().left() + self.geometry().width(), 
                                                      self.geometry().top(), 360, self.geometry().height()))
             self.descriptionWindow.show()
@@ -313,34 +379,34 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.fitItemInViews()
 
     def showBackFacesInOrder(self):
-        self.lstChosenCards[4].setShowFrontFace(False)        
+        self.lstChosenCards[3].setShowFrontFace(False)        
         self.grvCardCenter.scene().clear()
-        self.grvCardCenter.scene().tarotCard=self.lstChosenCards[4]
-        self.grvCardCenter.scene().addItem(self.lstChosenCards[4].getQGPVVisibleFaceImage())
-        QApplication.processEvents()
-        time.sleep(.7)
-        self.lstChosenCards[0].setShowFrontFace(False)        
-        self.grvCardWest.scene().clear()
-        self.grvCardWest.scene().tarotCard=self.lstChosenCards[0]
-        self.grvCardWest.scene().addItem(self.lstChosenCards[0].getQGPVVisibleFaceImage())
-        QApplication.processEvents()
-        time.sleep(.7)
-        self.lstChosenCards[2].setShowFrontFace(False)        
-        self.grvCardNorth.scene().clear()
-        self.grvCardNorth.scene().tarotCard=self.lstChosenCards[2]
-        self.grvCardNorth.scene().addItem(self.lstChosenCards[2].getQGPVVisibleFaceImage())
+        self.grvCardCenter.scene().tarotCard=self.lstChosenCards[3]
+        self.grvCardCenter.scene().addItem(self.lstChosenCards[3].getQGPVVisibleFaceImage())
         QApplication.processEvents()
         time.sleep(.7)
         self.lstChosenCards[1].setShowFrontFace(False)        
-        self.grvCardEast.scene().clear()
-        self.grvCardEast.scene().tarotCard=self.lstChosenCards[1] 
-        self.grvCardEast.scene().addItem(self.lstChosenCards[1].getQGPVVisibleFaceImage()) 
+        self.grvCardWest.scene().clear()
+        self.grvCardWest.scene().tarotCard=self.lstChosenCards[1]
+        self.grvCardWest.scene().addItem(self.lstChosenCards[1].getQGPVVisibleFaceImage())
         QApplication.processEvents()
         time.sleep(.7)
-        self.lstChosenCards[3].setShowFrontFace(False)        
+        self.lstChosenCards[0].setShowFrontFace(False)        
+        self.grvCardNorth.scene().clear()
+        self.grvCardNorth.scene().tarotCard=self.lstChosenCards[0]
+        self.grvCardNorth.scene().addItem(self.lstChosenCards[0].getQGPVVisibleFaceImage())
+        QApplication.processEvents()
+        time.sleep(.7)
+        self.lstChosenCards[2].setShowFrontFace(False)        
+        self.grvCardEast.scene().clear()
+        self.grvCardEast.scene().tarotCard=self.lstChosenCards[2] 
+        self.grvCardEast.scene().addItem(self.lstChosenCards[2].getQGPVVisibleFaceImage()) 
+        QApplication.processEvents()
+        time.sleep(.7)
+        self.lstChosenCards[4].setShowFrontFace(False)        
         self.grvCardSouth.scene().clear()
-        self.grvCardSouth.scene().tarotCard=self.lstChosenCards[3]
-        self.grvCardSouth.scene().addItem(self.lstChosenCards[3].getQGPVVisibleFaceImage())
+        self.grvCardSouth.scene().tarotCard=self.lstChosenCards[4]
+        self.grvCardSouth.scene().addItem(self.lstChosenCards[4].getQGPVVisibleFaceImage())
         QApplication.processEvents()
         time.sleep(.7)
                 
@@ -360,32 +426,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.grvCardSouth.scene().clear()
         self.grvCardEast.scene().clear()
         self.grvCardWest.scene().clear()
-        
-        self.grvCardCenter.scene().tarotCard=self.lstChosenCards[4]
-        self.grvCardNorth.scene().tarotCard=self.lstChosenCards[2]
-        self.grvCardSouth.scene().tarotCard=self.lstChosenCards[3]
-        self.grvCardEast.scene().tarotCard=self.lstChosenCards[1] 
-        self.grvCardWest.scene().tarotCard=self.lstChosenCards[0]
-               
-        self.grvCardCenter.scene().addItem(lstQGPFItems[4])
-        self.grvCardNorth.scene().addItem(lstQGPFItems[2])
-        self.grvCardSouth.scene().addItem(lstQGPFItems[3])
-        self.grvCardEast.scene().addItem(lstQGPFItems[1]) 
-        self.grvCardWest.scene().addItem(lstQGPFItems[0])
+
+        self.grvCardCenter.scene().tarotCard=self.lstChosenCards[3]
+        self.grvCardWest.scene().tarotCard=self.lstChosenCards[1]
+        self.grvCardNorth.scene().tarotCard=self.lstChosenCards[0]
+        self.grvCardEast.scene().tarotCard=self.lstChosenCards[2]
+        self.grvCardSouth.scene().tarotCard=self.lstChosenCards[4]
+
+        self.grvCardCenter.scene().addItem(lstQGPFItems[3])
+        self.grvCardWest.scene().addItem(lstQGPFItems[1])
+        self.grvCardNorth.scene().addItem(lstQGPFItems[0])
+        self.grvCardEast.scene().addItem(lstQGPFItems[2]) 
+        self.grvCardSouth.scene().addItem(lstQGPFItems[4])
         
     def fitItemInViews (self):        
         lstQGPFItems=[self.lstChosenCards[i].getQGPVVisibleFaceImage() for i in range(5)]
-        self.grvCardCenter.centerOn(lstQGPFItems[4])
-        self.grvCardNorth.centerOn(lstQGPFItems[2])
-        self.grvCardSouth.centerOn(lstQGPFItems[3])
-        self.grvCardEast.centerOn(lstQGPFItems[1])
-        self.grvCardWest.centerOn(lstQGPFItems[0])
+        self.grvCardCenter.centerOn(lstQGPFItems[3])
+        self.grvCardNorth.centerOn(lstQGPFItems[0])
+        self.grvCardSouth.centerOn(lstQGPFItems[4])
+        self.grvCardEast.centerOn(lstQGPFItems[2])
+        self.grvCardWest.centerOn(lstQGPFItems[1])
  
-        self.grvCardCenter.fitInView(lstQGPFItems[4], QtCore.Qt.KeepAspectRatio)
-        self.grvCardNorth.fitInView(lstQGPFItems[2], QtCore.Qt.KeepAspectRatio)
-        self.grvCardSouth.fitInView(lstQGPFItems[3], QtCore.Qt.KeepAspectRatio)
-        self.grvCardEast.fitInView(lstQGPFItems[1], QtCore.Qt.KeepAspectRatio)
-        self.grvCardWest.fitInView(lstQGPFItems[0], QtCore.Qt.KeepAspectRatio)
+        self.grvCardCenter.fitInView(lstQGPFItems[3], QtCore.Qt.KeepAspectRatio)
+        self.grvCardNorth.fitInView(lstQGPFItems[0], QtCore.Qt.KeepAspectRatio)
+        self.grvCardSouth.fitInView(lstQGPFItems[4], QtCore.Qt.KeepAspectRatio)
+        self.grvCardEast.fitInView(lstQGPFItems[2], QtCore.Qt.KeepAspectRatio)
+        self.grvCardWest.fitInView(lstQGPFItems[1], QtCore.Qt.KeepAspectRatio)
     
     @pyqtSlot()
     def on_btnPrincipalities_released(self):
