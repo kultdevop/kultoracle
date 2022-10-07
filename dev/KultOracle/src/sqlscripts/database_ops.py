@@ -21,7 +21,7 @@ def initialiseDatabase():
             "Database Error: %s" % con.lastError().databaseText()
         )
         return False
-    return runDDLScripts("./sqlsripts/DDL.sql")
+    return runDDLScripts("./sqlscripts/DDL.sql")
     
 
 
