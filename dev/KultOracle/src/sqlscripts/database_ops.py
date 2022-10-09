@@ -1,6 +1,8 @@
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery
 from PyQt5.Qt import QMessageBox, QIODevice, QTextStream
 from PyQt5.QtCore import QTemporaryDir, QFile
+import os
+import sys
 
 
 def initialiseDatabase():
@@ -21,13 +23,17 @@ def initialiseDatabase():
             "Database Error: %s" % con.lastError().databaseText()
         )
         return False
-    return runDDLScripts("./sqlscripts/DDL.sql")
+    return runDDLScripts("DDL.sql")
     
 
 
 def runDDLScripts(fullpathscriptfilename):
     query = QSqlQuery()
-    scriptFile = QFile(fullpathscriptfilename)
+    bundle_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+    path_to_script = os.path.abspath(os.path.join(bundle_dir, fullpathscriptfilename))
+
+    
+    scriptFile = QFile(path_to_script)
     
     if scriptFile.open(QIODevice.ReadOnly):
         # The SQLite driver executes only a single (the first) query in the QSqlQuery

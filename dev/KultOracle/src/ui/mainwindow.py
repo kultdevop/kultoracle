@@ -4,7 +4,7 @@
 Module implementing MainWindow.
 """
 
-import resources.bitmaps_rc
+from resources import bitmaps_rc
 
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import pyqtSlot, QTimer,  QDir
@@ -19,9 +19,11 @@ from ui.descriptionwindow import DescriptionWindow
 from ui.deck import DeckItem
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery
 
-from PyQt5.Qt import QRect, Qt, QByteArray, QBuffer, QIODevice, QDataStream
+from PyQt5.Qt import QRect, Qt, QByteArray, QBuffer, QIODevice, QDataStream,\
+    QFile
 from PyQt5.QtGui import QIcon, QPixmap, QTransform, QPainter, QPen, QFont
 from loader.pdfloader import PdfLoader
+from ui.loader import LoaderWindow
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     """
@@ -37,22 +39,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super(MainWindow, self).__init__(parent)
         #uic.loadUi('./ui/mainwindow.ui',self)
         #uic.loadUi('./ui/descriptionwindow.ui',self)
-        
         self.setupUi(self)
         
-        self.descriptionWindow = QMainWindow()
-        ui = DescriptionWindow()
-        ui.setupUi(self.descriptionWindow)
+        self.descriptionWindow = DescriptionWindow()
+        
+        
         self.setWindowIcon(QIcon(":/data/mainwindowicon"))
         
         self.frmCentralWidget.raise_()        
         #self.lblSilkScreen.hide()
         
-        self.dwlblDescription=ui.getLblDescription()
+        self.dwlblDescription=self.descriptionWindow.getLblDescription()
         self.lblSilkScreen.setText("")
         
         #only called to please the precompiler and remove unused warning
-        resources.bitmaps_rc.qt_resource_data=resources.bitmaps_rc.qt_resource_data
+        bitmaps_rc.qt_resource_data=bitmaps_rc.qt_resource_data
         # ############################
 
         self._manager = ManagerCursor(self)
@@ -60,6 +61,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._manager.setMovie(movie)
         self._manager.setWidget(self)        
         self._manager.start()
+               
+        self.shuffleTimer = QTimer(self)
+        self.shuffleTimer.setInterval(100) # interval in ms
+        self.shuffleTimer.timeout.connect(self.updateCards)
+        self.__sigilIdletTmeoutms=3000
+        self.__sigilIdleTimeoutCurrentms=0
+        
+        self.installEventFilter(self)
+        self.loaderWindow = LoaderWindow()
+        
+        self.initialiseResources()
+
+
+    def initialiseResources(self):
+
+
         
         self.loadContentIntoDatabase()
         
@@ -87,8 +104,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     query.value(DESCRIPTION), query.value(SUIT), query.value(PRINCIPALITY),
                         query.value(ARCANA))
 
-
         QSqlDatabase.removeDatabase(QSqlDatabase.database().connectionName())
+
+        fdb=QFile('./kcdata')
+        if fdb.exists():
+            fdb.remove()
 
         self.lstPrevActiveDeck=list(self.deckMajorArcana.values())
         self.lstActiveDeck=list(self.deckPrincipalities.values())
@@ -103,22 +123,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.initializeGraphicsViews()
         self.recreateItemsInViews()
-               
-        self.shuffleTimer = QTimer(self)
-        self.shuffleTimer.setInterval(100) # interval in ms
-        self.shuffleTimer.timeout.connect(self.updateCards)
-        self.__sigilIdletTmeoutms=3000
-        self.__sigilIdleTimeoutCurrentms=0
         
-        self.installEventFilter(self)
+        self.show()
+
+
+
+    def retranslateUi(self, uiMainWindow):
+        super(MainWindow, self).retranslateUi(uiMainWindow)
+        _translate = QtCore.QCoreApplication.translate
+        uiMainWindow.setWindowTitle(_translate("MainWindow", "KultOracle beta 0.1.0.0"))
+
+
 
     def loadContentIntoDatabase(self):
+        
+                
         workdir = "./" 
         deck_rules_filename='KULT Divinity Lost - Tarot Deck Rules.pdf'
         tarot_deck_filename='kult-tarot.pdf'
         
     
-        pdfprocessor=PdfLoader()
+        pdfprocessor=PdfLoader(self.loaderWindow)
         
         pdfprocessor.processDocuments(workdir, deck_rules_filename, 
                                                      tarot_deck_filename)
@@ -137,8 +162,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             print("query prep result: ",query.lastError().text())
         else:
             query.addBindValue(arcana)
-            print("query select exec res: ",query.exec())
-            print("query result: ",query.lastError().text())
+            #print("query select exec res: ",query.exec())
+            #print("query result: ",query.lastError().text())
 
         while query.next():
             
@@ -344,7 +369,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def resizeEvent(self, event):
         self.frmCentralWidget.resize(event.size())
         self.lblSilkScreen.resize(event.size())
-        print(event.size())
+        #print(event.size())
         self.lblSilkScreen.update()
         self.lblSilkScreen.originalPixmap=QtGui.QPixmap(":/data/gradients").scaledToHeight(event.size().height()*2)
         self.lblSilkScreen.setPixmap(self.lblSilkScreen.originalPixmap.copy())

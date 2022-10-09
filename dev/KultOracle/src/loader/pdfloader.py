@@ -5,46 +5,41 @@ Created on Oct 2, 2022
 '''
 
 
-import fitz
-from PyQt5.QtGui import QPixmap, QImage, QPicture
-import os
-import sys
-from PIL.ImageQt import ImageQt
-# Create window
-import re
-from tqdm import tqdm # pip install tqdm
-from PyQt5.Qt import QWidget, QTemporaryDir, QFile, QSqlDatabase, QByteArray,\
-    QBuffer, QIODevice, QDataStream
-from PyQt5.QtWidgets import QApplication, QLabel, QMessageBox
-from PIL.Image import frombytes
-from PyQt5.QtSql import QSqlQuery
 from itertools import islice
+import re
+import sys
+from time import sleep
+
+from PIL.Image import frombytes
+from PIL.ImageQt import ImageQt
+from PyQt5.Qt import QByteArray, \
+    QBuffer, QIODevice, QDataStream
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtSql import QSqlQuery
+from PyQt5.QtWidgets import QApplication
+import fitz
 
 
-
-
+# Create window
 class PdfLoader(object):
     '''
     classdocs
     '''
 
 
-    def __init__(self):
+    def __init__(self, _loaderWindow):
         '''
         Constructor
         '''
-        #self.app = QApplication(sys.argv)
-        self.w = QWidget()
-        self.w.setWindowTitle("PyQT4 Pixmap @ pythonspot.com ")
-        
-        
+        self.loaderWindow = _loaderWindow
 
-    
+
+
     def populateDeckContent(self, regex,fulltext,key,suit,principality,arcana,dct):
         if match := re.search(regex, fulltext, re.IGNORECASE):        
             dct[key]=dict(DESCRIPTION=str(match.group(1)),SUIT = suit, PRINCIPALITY=principality, 
                                                                         ARCANA=arcana, IMAGE=None, IMAGEBACK=None)
-            print(str(dct[key]))
+            #print(str(dct[key]))
             
     
     def processArcanas(self, fulltext, arcana, dct, startid=0):
@@ -57,7 +52,7 @@ class PdfLoader(object):
             body=match.group(4) if match.group(2)is None else match.group(2)
             key=str(name+str(i).zfill(3)).upper()
             dct[key]=body
-            print(dct[key])
+            #print(dct[key])
             i+=1
         
             regex = r"(?sm)(?:^"+str(i)+"\.\s(\w+(?:-\w*)*)(.*$.*)^"+str(i+1)+"\. )|(?:^"+str(i)+"\.\s(\w+(?:-\w*)*)(.*$.*)\Z)"
@@ -182,17 +177,21 @@ class PdfLoader(object):
         for toc_page in toc:
             for key in  islice(deckcontentdct.keys(), 5, sys.maxsize):
                 if key[:-3] in toc_page[1].upper():
-                    for img in tqdm(doc.get_page_images(toc_page[2]-1), desc="page_images"):
+                    for img in doc.get_page_images(toc_page[2]-1):
                         xref = img[0]
                         image = doc.extract_image(xref)
-                        print(f"\nwidth = {image['width']} height = {image['height']}")
+        
+                        self.loaderWindow.stepCompleted(0.3, \
+                            f"processing visual art {key} width = {image['width']} height = {image['height']}")
+
+                        #print(f"\nwidth = {image['width']} height = {image['height']}")
                         
                         if image["width"]==390 and image["height"] == 686:
                             pix = fitz.Pixmap(doc, xref)
                             pilimg = frombytes('RGB', [pix.width, pix.height], pix.samples,'raw')
                             qimage = ImageQt( pilimg).copy()
     
-                            label = QLabel(self.w)
+                            #label = QLabel(self.w)
                             
                             pixmap = QPixmap.fromImage(qimage)
                                                     
@@ -213,15 +212,15 @@ class PdfLoader(object):
                             picdata = QPixmap()
                             inp >> picdata                        
                             
-                            self.w.resize(picdata.width(), picdata.height())
+                            #self.w.resize(picdata.width(), picdata.height())
                             
-                            label.setPixmap(picdata)
+                            #label.setPixmap(picdata)
                             # Draw window
                             #self.w.show()
                             # Create widget
                             #self.app.exec_()
     
-                            label.deleteLater()
+                            #label.deleteLater()
 
 
         zoom_x = 2  # horizontal zoom
@@ -229,10 +228,10 @@ class PdfLoader(object):
         mat = fitz.Matrix(zoom_x, zoom_y)  # zoom factor 2 in each dimension
 
         pix = doc[73].get_pixmap(matrix=mat)
-        print("page: ", doc[73].get_label())
+        #print("page: ", doc[73].get_label())
         pilimg = frombytes('RGB', [pix.width, pix.height], pix.samples,'raw')
         qimage = ImageQt( pilimg).copy()
-        label = QLabel(self.w)
+        #label = QLabel(self.w)
         
         pixmap = QPixmap.fromImage(qimage)
         
@@ -248,10 +247,12 @@ class PdfLoader(object):
         
         for i in range(4):
             pix = doc[i].get_pixmap(matrix=mat)
-            print("page: ", doc[i].get_label())
+            #print("page: ", doc[i].get_label())
             pilimg = frombytes('RGB', [pix.width, pix.height], pix.samples,'raw')
             qimage = ImageQt( pilimg).copy()
-            label = QLabel(self.w)
+            #label = QLabel(self.w)
+            self.loaderWindow.stepCompleted(0.2, \
+                f"{key} width = {pix.width} height = {pix.height}")
             
             pixmap = QPixmap.fromImage(qimage)
             
@@ -279,6 +280,14 @@ class PdfLoader(object):
                         deck_rules_filename,
                         tarot_deck_filename):
         
+        
+        self.loaderWindow.resetProgress("standby, the gathering is about to commence ...")
+        sleep(2)
+        self.loaderWindow.show()
+        QApplication.processEvents()
+
+
+        
         fulltext_major_arcana_buffer = ''
         fulltext_minor_arcana_buffer = ''
         
@@ -291,27 +300,42 @@ class PdfLoader(object):
         fulltext_tarot_deck = self.getpdftext( workdir, filename )
     
         
+        self.loaderWindow.stepCompleted(5, "loading front cover")
     
         #FRONT COVER
         regex = r"(?s)(Basic\s{1,5}Guidelines.*)Example\s{1,5}reading"
         self.populateDeckContent(regex,fulltext_buffer,'FRONT COVER003','COVER','ALL','ALL',deckcontentdct)
+
+        self.loaderWindow.stepCompleted(5, "loading archons background data")
     
         #'ARCHONS'
         regex = r"(?sm)Reading\s{1,5}Templates\s{1,5}The\s{1,5}Major\s{1,5}Arcana(.*)^0. "
         self.populateDeckContent(regex,fulltext_buffer,'ARCHONS002','COVER','ALL','ALL',deckcontentdct)
             
+    
+        self.loaderWindow.stepCompleted(5, "adding death angels")
+    
         #'DEATH ANGELS'
         regex = r"(?sm)Reading\s{1,5}Templates\s{1,5}The\s{1,5}Major\s{1,5}Arcana(.*)^0. "
         self.populateDeckContent(regex,fulltext_buffer,'DEATH ANGELS004','COVER','ALL','ALL',deckcontentdct)
             
+            
+        self.loaderWindow.stepCompleted(5, "getting suits")
+    
         #'SUITS'
         regex = r"(?sm)^The\s{1,5}Minor\s{1,5}Arcana\s{1,5}(The\s{1,5}Minor\s{1,5}Arcana.*)^Skulls"
         self.populateDeckContent(regex, fulltext_buffer, 'SUITS001','COVER','ALL','ALL', deckcontentdct)
+        
+    
+        self.loaderWindow.stepCompleted(5, "reading kult guide")
         
         #'KULT GUIDE URL'
         deckcontentdct['KULT GUIDE URL005']='Guide to Using\nthe Tarot Deck\nhttps://kultdivinitylost.com/tarot'
         deckcontentdct['KULT GUIDE URL005']=dict( DESCRIPTION=deckcontentdct['KULT GUIDE URL005'], SUIT='COVER',
                             PRINCIPALITY='ALL',ARCANA='ALL',IMAGE=None, IMAGEBACK=None)
+        
+    
+        self.loaderWindow.stepCompleted(5, "loading major arcanas")
         
         #'The Major Arcana'
         regex=r"(?sm)(^0\.\s{1,5}\w+(?:-\w*)*$.*)\d{1,3}\s{1,5}^The\s{1,5}Major\s{1,5}Arcana\s{1,5}"
@@ -320,6 +344,9 @@ class PdfLoader(object):
             self.processArcanas(fulltext_major_arcana_buffer, 'MAJOR_ARCANA', deckcontentdct)    
             self.loadMajorArcanaInfo(fulltext_tarot_deck, deckcontentdct)
         
+        
+        self.loaderWindow.stepCompleted(5, "getting minor arcanas")
+        
         #'The Minor Arcana'
         regex=r"(?sm)(^1\.\s{1,5}\w+(?:-\w*)*$.*\.)(?:\s{1,5}^\d{1,3}\s{1,5}^The\s{1,5}Minor\s{1,5}Arcana\s{1,5})"
         if match := re.search(regex, fulltext_buffer.replace(fulltext_major_arcana_buffer, ""), re.IGNORECASE):
@@ -327,13 +354,18 @@ class PdfLoader(object):
             #processArcanas(fulltext_minor_arcana_buffer, 'MINOR_ARCANA',deckcontentdct, 1)
             self.loadMinorArcana(fulltext_minor_arcana_buffer, deckcontentdct)
     
+        self.loaderWindow.stepCompleted(5, "processing visual art")
+    
         self.populateImageData( deckcontentdct, workdir, tarot_deck_filename,'METROPOLIS001' )
         
+
+        self.loaderWindow.stepCompleted(5, "projecting onto database")
     
         query = QSqlQuery()
         
         prepstmnt= "INSERT INTO CARDS_DECK ( NAME, DESCRIPTION, SUIT, PRINCIPALITY, ARCANA, IMAGE, IMAGEBACK) " + \
                         "VALUES ( ?,?,?,?,?,?,? )"
+
     
         for key in deckcontentdct:
             if not query.prepare(prepstmnt):
@@ -346,9 +378,16 @@ class PdfLoader(object):
                 query.addBindValue(deckcontentdct[key]["ARCANA"])
                 query.addBindValue(deckcontentdct[key]["IMAGE"])
                 query.addBindValue(deckcontentdct[key]["IMAGEBACK"])
+
+                self.loaderWindow.stepCompleted(0.3, f"{key} {deckcontentdct[key]['SUIT']}")
     
-                print("query insert res: ",query.exec())
-            print("query result: ",query.lastError().text())
+            if not query.exec():    
+                print("query result: ",query.lastError().text())
             
+        
+        self.loaderWindow.stepCompleted(10, "loading complete!, initialising Kult Oracle interface...")
+        QApplication.processEvents()
+        sleep(5)
     
+        self.loaderWindow.hide()
     
