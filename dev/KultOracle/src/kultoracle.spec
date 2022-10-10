@@ -7,7 +7,7 @@ block_cipher = None
 a = Analysis(
     ['kultoraclemain.py'],
     pathex=[],
-    binaries=[('/lib/python3.8/site-packages/PyQt5/Qt5/plugins/wayland-shell-integration/*', 'PyQt5/Qt5/plugins/wayland-shell-integration'), ('/lib/python3.8/site-packages/PyQt5/Qt5/plugins/wayland-graphics-integration-client/*', 'PyQt5/Qt5/plugins/wayland-graphics-integration-client'), ('/lib/python3.8/site-packages/PyQt5/Qt5/plugins/wayland-decoration-client/*', 'PyQt5/Qt5/plugins/wayland-decoration-client'), ('/lib/python3.8/site-packages/fitz/*', 'fitz')],
+    binaries=[('/home/columbus/.virtualenvs/pyqt5waylandsupport/lib/python3.8/site-packages/PyQt5/Qt5/plugins/wayland-shell-integration/*', 'PyQt5/Qt5/plugins/wayland-shell-integration'), ('/home/columbus/.virtualenvs/pyqt5waylandsupport/lib/python3.8/site-packages/PyQt5/Qt5/plugins/wayland-graphics-integration-client/*', 'PyQt5/Qt5/plugins/wayland-graphics-integration-client'), ('/home/columbus/.virtualenvs/pyqt5waylandsupport/lib/python3.8/site-packages/PyQt5/Qt5/plugins/wayland-decoration-client/*', 'PyQt5/Qt5/plugins/wayland-decoration-client'), ('/home/columbus/.virtualenvs/pyqt5waylandsupport/lib/python3.8/site-packages/fitz/*', 'fitz')],
     datas=[('sqlscripts/DDL.sql', '.')],
     hiddenimports=['json'],
     hookspath=['./__pyinstaller'],

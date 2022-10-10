@@ -37,12 +37,15 @@ class PdfLoader(object):
 
     def populateDeckContent(self, regex,fulltext,key,suit,principality,arcana,dct):
         if match := re.search(regex, fulltext, re.IGNORECASE):        
-            dct[key]=dict(DESCRIPTION=str(match.group(1)),SUIT = suit, PRINCIPALITY=principality, 
+            dct[key]=dict(DESCRIPTION=self.remove_footers(str(match.group(1))),SUIT = suit, PRINCIPALITY=principality, 
                                                                         ARCANA=arcana, IMAGE=None, IMAGEBACK=None)
             #print(str(dct[key]))
             
     
     def processArcanas(self, fulltext, arcana, dct, startid=0):
+        
+        fulltext=self.remove_footers(fulltext)
+        
         i=startid
         
         regex = r"(?sm)(?:^"+str(i)+"\.\s(\w+(?:-\w*)*)(.*$.*)^"+str(i+1)+"\. )|(?:^"+str(i)+"\.\s(\w+(?:-\w*)*)(.*$.*)\Z)"
@@ -75,6 +78,9 @@ class PdfLoader(object):
         
         
     def loadMajorArcanaInfo(self, buf, dct):
+        
+        buf=self.remove_footers(buf)
+        
         arcana='MAJOR_ARCANA'
         
         regex = '(?sm)^The\s{1,5}Death\s{1,5}Angels\s{1,5}(.*)^Guide\s{1,5}to\s{1,5}Using'
@@ -120,38 +126,56 @@ class PdfLoader(object):
         
     
     def loadMinorArcana(self, buf, dct):
+        buf=self.remove_footers(buf)
+        
         arcana='MINOR_ARCANA'
         suits=(('SKULL','DEATH'),('ROSE','PASSION'),('HOURGLASS','LABYRINTH'),('CRESCENT','MOON'),('EYE','ELYSIUM'))
         regex = r'(?sm)(^1\. .*?)((?=^1\. )|\Z)'
-        regexextractsuitdesc = r'(?sm)(SUITPLH\w(?:-\w*)*$.*?\.[\n])'
-        suit='SKULLS'
+        regexallsuitsdesc=r'(?sm)(^[^\d](\w{0,})(?:-\w*)*$.*?\.[\n])'
+        dctsuits={}
         
+        i=0
+        
+        for match in re.findall(regexallsuitsdesc, buf, re.IGNORECASE):
+            dctsuits[suits[i][0]]=match[0]
+            i += 1
+            buf = buf.replace(match[0],'')
+            
+        
+        
+        i=0
         for match in re.findall(regex, buf, re.IGNORECASE):        
             
             subtext=match[0]
-            currsuit=''
-            suitdesc=''
-            for suit in suits:
-                if match := re.search(regexextractsuitdesc.replace('SUITPLH', suit[0]), 
-                                      subtext, re.IGNORECASE):
-                    suitdesc=match.group(1)
-                    currsuit=suit[0]
-                    currprincipality=suit[1]
-                    subtext = subtext.replace(suitdesc,'')
+            
+            currsuit=suits[i][0]
+            currprincipality=suits[i][1]
+            suitdesc=dctsuits[currsuit]
+            
+            i += 1
             
             regex_card='(?sm)(^(\d+)\. (\w+(?:-\w*)*).*?)((?=^\d+\. )|\Z)'
             
             for match_card in re.findall(regex_card, subtext, re.IGNORECASE):
                 dct[match_card[2] + match_card[1].zfill(3)]=dict(DESCRIPTION=suitdesc + '\n\n' +match_card[0] ,
-                                SUIT = currsuit, PRINCIPALITY=currprincipality, ARCANA=arcana, IMAGE=None, IMAGEBACK=None)
+                                SUIT = currsuit, PRINCIPALITY=currprincipality, ARCANA=arcana, IMAGE=None)
             
     
     def sanitize_text(self,text):
         
         t = re.sub(r'(?m)(?:^\d+\n){2,}', '', text, count=0, flags=0)
-        t = re.sub(r'(\w+)-\n', r'\n\1', t, count=0, flags=0)
+        t = re.sub(r'(?im)(\w+)-\n', r'\n\1', t, count=0, flags=0)
+        
         return t
+
     
+    def remove_footers(self,text):
+        
+        t = re.sub(r'(?im)^\d{1,3}\n\w+(?:[\s]\w+){0,3}?\n', '', text, count=0, flags=0)
+        return t
+
+
+            
     
     def getpdftext(self, workdir, filename):
         doc = fitz.Document(workdir + filename )
@@ -252,7 +276,7 @@ class PdfLoader(object):
             qimage = ImageQt( pilimg).copy()
             #label = QLabel(self.w)
             self.loaderWindow.stepCompleted(0.2, \
-                f"{key} width = {pix.width} height = {pix.height}")
+                f"{principalitiesscreen[i]} width = {pix.width} height = {pix.height}")
             
             pixmap = QPixmap.fromImage(qimage)
             
@@ -295,7 +319,10 @@ class PdfLoader(object):
     
         filename=deck_rules_filename    
         fulltext_buffer = self.getpdftext( workdir, filename )
-            
+        
+        with open("fulltext_buffer.txt", mode="wt") as f:
+            f.write(fulltext_buffer)
+        
         filename=tarot_deck_filename    
         fulltext_tarot_deck = self.getpdftext( workdir, filename )
     
@@ -381,8 +408,8 @@ class PdfLoader(object):
 
                 self.loaderWindow.stepCompleted(0.3, f"{key} {deckcontentdct[key]['SUIT']}")
     
-            if not query.exec():    
-                print("query result: ",query.lastError().text())
+                if not query.exec():    
+                    print("query result: ",query.lastError().text())
             
         
         self.loaderWindow.stepCompleted(10, "loading complete!, initialising Kult Oracle interface...")

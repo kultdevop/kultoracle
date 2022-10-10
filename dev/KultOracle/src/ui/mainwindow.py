@@ -162,8 +162,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             print("query prep result: ",query.lastError().text())
         else:
             query.addBindValue(arcana)
-            #print("query select exec res: ",query.exec())
-            #print("query result: ",query.lastError().text())
+            
+            if not query.exec():
+                print("query result: ",query.lastError().text())
 
         while query.next():
             
@@ -352,7 +353,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.btnArcanas.setEnabled(False)
             self.btnPrincipalities.setEnabled(False)
             self.lblSilkScreen.raise_()
-            self.lblSilkScreen.set_opacity(0.7)
+            self.lblSilkScreen.set_opacity(0.8)
             #self.lblSilkScreen.show()
             self.angle=0
             self.showBackFaces()
@@ -371,7 +372,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.lblSilkScreen.resize(event.size())
         #print(event.size())
         self.lblSilkScreen.update()
-        self.lblSilkScreen.originalPixmap=QtGui.QPixmap(":/data/gradients").scaledToHeight(event.size().height()*2)
+        self.lblSilkScreen.originalPixmap=QtGui.QPixmap(":/data/gradients").scaledToHeight(event.size().height()*2.1)
         self.lblSilkScreen.setPixmap(self.lblSilkScreen.originalPixmap.copy())
 
         self.fitItemInViews()
