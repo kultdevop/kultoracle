@@ -1,8 +1,9 @@
 <RCC>
   <qresource prefix="data">
+    <file alias="skullud">data/skullud.png</file>
+    <file alias="skull">data/skull.png</file>
     <file alias="gradients">data/gradients.png</file>
     <file alias="mainwindowicon">data/mainwindowicon.png</file>
-    <file alias="kcdata">data/kcdata</file>
     <file alias="mousecursorhand">data/handcursor.gif</file>
     <file alias="mousecursormain">data/trianglecursor.gif</file>
   </qresource>
