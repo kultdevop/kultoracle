@@ -14,14 +14,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_LoaderWindow(object):
     def setupUi(self, LoaderWindow):
         LoaderWindow.setObjectName("LoaderWindow")
-        LoaderWindow.resize(588, 76)
+        LoaderWindow.resize(588, 92)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(LoaderWindow.sizePolicy().hasHeightForWidth())
         LoaderWindow.setSizePolicy(sizePolicy)
-        LoaderWindow.setMinimumSize(QtCore.QSize(588, 76))
-        LoaderWindow.setMaximumSize(QtCore.QSize(588, 76))
+        LoaderWindow.setMinimumSize(QtCore.QSize(588, 90))
+        LoaderWindow.setMaximumSize(QtCore.QSize(588, 92))
         LoaderWindow.setFocusPolicy(QtCore.Qt.StrongFocus)
         LoaderWindow.setStyleSheet("background-color: rgb(60, 0, 0);\n"
 "font: oblique 12pt \"DejaVu Sans\";")
@@ -43,38 +43,39 @@ class Ui_LoaderWindow(object):
         self.gridLayout_2.setObjectName("gridLayout_2")
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setSizeConstraint(QtWidgets.QLayout.SetMinimumSize)
-        self.verticalLayout.setContentsMargins(-1, 0, -1, 0)
-        self.verticalLayout.setSpacing(0)
+        self.verticalLayout.setContentsMargins(-1, 5, -1, 0)
+        self.verticalLayout.setSpacing(5)
         self.verticalLayout.setObjectName("verticalLayout")
         self.pbPdfLoader = QtWidgets.QProgressBar(self.frmcontainer)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pbPdfLoader.sizePolicy().hasHeightForWidth())
         self.pbPdfLoader.setSizePolicy(sizePolicy)
-        self.pbPdfLoader.setMaximumSize(QtCore.QSize(16777215, 15))
+        self.pbPdfLoader.setMaximumSize(QtCore.QSize(16777215, 16777215))
         font = QtGui.QFont()
-        font.setFamily("Z003 [urw]")
-        font.setPointSize(16)
+        font.setFamily("Great Vibes")
+        font.setPointSize(18)
         font.setBold(False)
-        font.setItalic(True)
-        font.setWeight(7)
+        font.setItalic(False)
+        font.setWeight(50)
         self.pbPdfLoader.setFont(font)
         self.pbPdfLoader.setStyleSheet("QProgressBar {\n"
-"font: 57 italic 16pt \"Z003 [urw]\";\n"
+"font: 18pt \"Great Vibes\";\n"
 "text-align: center;\n"
 "border: 1px solid black;\n"
 "color: white;\n"
 "background-color: rgb(200, 0, 0);\n"
+"border-radius: 10px;\n"
 "}\n"
 "\n"
 "QProgressBar::chunk {\n"
 "    background-color: rgb(100, 0, 0);\n"
-"    width: 20px;\n"
-"}\n"
-"\n"
-"\n"
-"")
+"min-height: 10px;\n"
+"max-height: 10px;\n"
+"width: 10px;\n"
+"border-radius: 5px;\n"
+"}")
         self.pbPdfLoader.setProperty("value", 24)
         self.pbPdfLoader.setAlignment(QtCore.Qt.AlignCenter)
         self.pbPdfLoader.setObjectName("pbPdfLoader")
@@ -82,14 +83,14 @@ class Ui_LoaderWindow(object):
         self.lblStatus = QtWidgets.QLabel(self.frmcontainer)
         self.lblStatus.setMaximumSize(QtCore.QSize(16777215, 20))
         font = QtGui.QFont()
-        font.setFamily("Z003 [urw]")
-        font.setPointSize(16)
+        font.setFamily("Great Vibes")
+        font.setPointSize(12)
         font.setBold(False)
-        font.setItalic(True)
-        font.setWeight(7)
+        font.setItalic(False)
+        font.setWeight(50)
         self.lblStatus.setFont(font)
         self.lblStatus.setStyleSheet("QLabel{\n"
-"font: 57 italic 16pt \"Z003 [urw]\";\n"
+"    font: 12pt \"Great Vibes\";\n"
 "text-align: center;\n"
 "border: 1px rgb(33, 0, 0);\n"
 "color: white;\n"

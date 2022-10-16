@@ -210,18 +210,19 @@ class Ui_DescriptionWindow(object):
         sizePolicy.setHeightForWidth(self.lblDescription.sizePolicy().hasHeightForWidth())
         self.lblDescription.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
-        font.setFamily("Liberation Serif")
-        font.setPointSize(14)
+        font.setFamily("Great Vibes")
+        font.setPointSize(18)
         font.setBold(False)
-        font.setItalic(True)
+        font.setItalic(False)
         font.setWeight(50)
         self.lblDescription.setFont(font)
         self.lblDescription.setMouseTracking(True)
         self.lblDescription.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.lblDescription.setAutoFillBackground(False)
-        self.lblDescription.setStyleSheet("font: italic 14pt \"Liberation Serif\";\n"
+        self.lblDescription.setStyleSheet("font: 18pt \"Great Vibes\";\n"
 "background-color: rgb(0, 0, 0);\n"
-"color: rgb(255, 255, 255);")
+"color: rgb(255, 255, 255);\n"
+"")
         self.lblDescription.setFrameShape(QtWidgets.QFrame.WinPanel)
         self.lblDescription.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.lblDescription.setTextFormat(QtCore.Qt.AutoText)
