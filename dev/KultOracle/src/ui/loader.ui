@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>588</width>
-    <height>76</height>
+    <height>92</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>588</width>
-    <height>76</height>
+    <height>90</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>588</width>
-    <height>76</height>
+    <height>92</height>
    </size>
   </property>
   <property name="focusPolicy">
@@ -61,13 +61,13 @@ font: oblique 12pt &quot;DejaVu Sans&quot;;</string>
        <item row="0" column="0">
         <layout class="QVBoxLayout" name="verticalLayout">
          <property name="spacing">
-          <number>0</number>
+          <number>5</number>
          </property>
          <property name="sizeConstraint">
           <enum>QLayout::SetMinimumSize</enum>
          </property>
          <property name="topMargin">
-          <number>0</number>
+          <number>5</number>
          </property>
          <property name="bottomMargin">
           <number>0</number>
@@ -75,7 +75,7 @@ font: oblique 12pt &quot;DejaVu Sans&quot;;</string>
          <item>
           <widget class="QProgressBar" name="pbPdfLoader">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -83,34 +83,35 @@ font: oblique 12pt &quot;DejaVu Sans&quot;;</string>
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>15</height>
+             <height>16777215</height>
             </size>
            </property>
            <property name="font">
             <font>
-             <family>Z003 [urw]</family>
-             <pointsize>16</pointsize>
-             <weight>7</weight>
-             <italic>true</italic>
+             <family>Great Vibes</family>
+             <pointsize>18</pointsize>
+             <weight>50</weight>
+             <italic>false</italic>
              <bold>false</bold>
             </font>
            </property>
            <property name="styleSheet">
             <string notr="true">QProgressBar {
-font: 57 italic 16pt &quot;Z003 [urw]&quot;;
+font: 18pt &quot;Great Vibes&quot;;
 text-align: center;
 border: 1px solid black;
 color: white;
 background-color: rgb(200, 0, 0);
+border-radius: 10px;
 }
 
 QProgressBar::chunk {
     background-color: rgb(100, 0, 0);
-    width: 20px;
-}
-
-
-</string>
+min-height: 10px;
+max-height: 10px;
+width: 10px;
+border-radius: 5px;
+}</string>
            </property>
            <property name="value">
             <number>24</number>
@@ -130,16 +131,16 @@ QProgressBar::chunk {
            </property>
            <property name="font">
             <font>
-             <family>Z003 [urw]</family>
-             <pointsize>16</pointsize>
-             <weight>7</weight>
-             <italic>true</italic>
+             <family>Great Vibes</family>
+             <pointsize>12</pointsize>
+             <weight>50</weight>
+             <italic>false</italic>
              <bold>false</bold>
             </font>
            </property>
            <property name="styleSheet">
             <string notr="true">QLabel{
-font: 57 italic 16pt &quot;Z003 [urw]&quot;;
+	font: 12pt &quot;Great Vibes&quot;;
 text-align: center;
 border: 1px rgb(33, 0, 0);
 color: white;

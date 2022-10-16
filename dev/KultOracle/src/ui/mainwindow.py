@@ -43,7 +43,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         self.descriptionWindow = DescriptionWindow()
         
-        
         self.setWindowIcon(QIcon(":/data/mainwindowicon"))
         
         self.frmCentralWidget.raise_()        
@@ -61,7 +60,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._manager.setMovie(movie)
         self._manager.setWidget(self)        
         self._manager.start()
-               
+
         self.shuffleTimer = QTimer(self)
         self.shuffleTimer.setInterval(100) # interval in ms
         self.shuffleTimer.timeout.connect(self.updateCards)
@@ -75,8 +74,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def initialiseResources(self):
-
-
         
         self.loadContentIntoDatabase()
         
@@ -136,8 +133,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def loadContentIntoDatabase(self):
-        
-                
         workdir = "./" 
         deck_rules_filename='KULT Divinity Lost - Tarot Deck Rules.pdf'
         tarot_deck_filename='kult-tarot.pdf'

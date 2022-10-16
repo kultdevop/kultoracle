@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="data">
+    <file alias="greatvibes-regular">data/GreatVibes-Regular.ttf</file>
     <file alias="skullud">data/skullud.png</file>
     <file alias="skull">data/skull.png</file>
     <file alias="gradients">data/gradients.png</file>

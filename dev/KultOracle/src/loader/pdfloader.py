@@ -320,8 +320,8 @@ class PdfLoader(object):
         filename=deck_rules_filename    
         fulltext_buffer = self.getpdftext( workdir, filename )
         
-        with open("fulltext_buffer.txt", mode="wt") as f:
-            f.write(fulltext_buffer)
+        #with open("fulltext_buffer.txt", mode="wt", "utf-8") as f:
+        #    f.write(fulltext_buffer)
         
         filename=tarot_deck_filename    
         fulltext_tarot_deck = self.getpdftext( workdir, filename )
