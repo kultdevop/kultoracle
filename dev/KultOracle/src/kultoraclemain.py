@@ -11,7 +11,7 @@ if __name__ == "__main__":
         sys.exit(1)
     
     app = QtWidgets.QApplication(sys.argv)
-    _id = QtGui.QFontDatabase.addApplicationFont("greatvibes-regular")
+    _id = QtGui.QFontDatabase.addApplicationFont(":/data/greatvibes-regular")
     print(QtGui.QFontDatabase.applicationFontFamilies(_id))
     ui = MainWindow()
     sys.exit(app.exec_())
