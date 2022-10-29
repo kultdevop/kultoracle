@@ -27,7 +27,7 @@ class SilkScreenLabel(QLabel):
         
         self.set_opacity(0.5)
            
-        self.originalPixmap=QtGui.QPixmap(":/data/gradients").scaledToHeight(self.height()*1.3)
+        self.originalPixmap=QtGui.QPixmap(":/data/gradients").scaledToHeight(int(self.height()*1.3))
         
         self.setPixmap(self.originalPixmap.copy())
  

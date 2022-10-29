@@ -24,11 +24,19 @@ from PyQt5.Qt import QRect, Qt, QByteArray, QBuffer, QIODevice, QDataStream,\
 from PyQt5.QtGui import QIcon, QPixmap, QTransform, QPainter, QPen, QFont
 from loader.pdfloader import PdfLoader
 from ui.loader import LoaderWindow
+import atexit
+import sys
+import os
+
+
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     """
     Class documentation goes here.
     """
+    workdir = os.path.abspath(os.path.dirname(sys.argv[0])) + '/'
+    print (workdir)
+    
     def __init__(self, parent=None):
         """
         Constructor
@@ -36,6 +44,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         @param parent reference to the parent widget
         @type QWidget
         """
+        atexit.register(self.function_to_run_on_exit)
         super(MainWindow, self).__init__(parent)
         #uic.loadUi('./ui/mainwindow.ui',self)
         #uic.loadUi('./ui/descriptionwindow.ui',self)
@@ -72,6 +81,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         self.initialiseResources()
 
+    def function_to_run_on_exit(self):
+        fdb=QFile(MainWindow.workdir +  'kcdata')
+        print('cleaning up...')
+        if fdb.exists():
+            fdb.remove()
+
+
 
     def initialiseResources(self):
         
@@ -91,19 +107,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.populateDeckFromDb("MINOR_ARCANA",  self.deckMinorArcana)
         self.populateDeckFromDb("ALL",  self.deckPrincipalities)
 
-        
-        NAME, DESCRIPTION, SUIT, PRINCIPALITY, ARCANA = range(5)
-        
-        query = QSqlQuery("SELECT NAME, DESCRIPTION, SUIT, PRINCIPALITY, ARCANA FROM CARDS_DECK")
-
-        while query.next():
-            self.dctCardsInfo[query.value(NAME)]=(query.value(NAME),
-                    query.value(DESCRIPTION), query.value(SUIT), query.value(PRINCIPALITY),
-                        query.value(ARCANA))
-
         QSqlDatabase.removeDatabase(QSqlDatabase.database().connectionName())
 
-        fdb=QFile('./kcdata')
+        fdb=QFile(MainWindow.workdir + 'kcdata')
         if fdb.exists():
             fdb.remove()
 
@@ -133,14 +139,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def loadContentIntoDatabase(self):
-        workdir = "./" 
+        
         deck_rules_filename='KULT Divinity Lost - Tarot Deck Rules.pdf'
         tarot_deck_filename='kult-tarot.pdf'
         
     
         pdfprocessor=PdfLoader(self.loaderWindow)
         
-        pdfprocessor.processDocuments(workdir, deck_rules_filename, 
+        pdfprocessor.processDocuments(MainWindow.workdir, deck_rules_filename, 
                                                      tarot_deck_filename)
     
     
@@ -367,7 +373,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.lblSilkScreen.resize(event.size())
         #print(event.size())
         self.lblSilkScreen.update()
-        self.lblSilkScreen.originalPixmap=QtGui.QPixmap(":/data/gradients").scaledToHeight(event.size().height()*2.1)
+        self.lblSilkScreen.originalPixmap=QtGui.QPixmap(":/data/gradients").scaledToHeight(int(event.size().height()*2.1))
         self.lblSilkScreen.setPixmap(self.lblSilkScreen.originalPixmap.copy())
 
         self.fitItemInViews()
